@@ -7,10 +7,11 @@ const BANGUMI_ACCESS_TOKEN = process.env.BANGUMI_ACCESS_TOKEN;
 // Bangumi API User Agent
 const BANGUMI_USER_AGENT = process.env.BANGUMI_USER_AGENT;
 
-// Bangumi游戏类型定义
-interface BangumiGame {
+// Bangumi条目类型定义
+interface BangumiSubject {
   id: number;
   name: string;
+  type: number; // 条目类型：1=书籍，2=动画，3=音乐，4=游戏，6=三次元
   images?: {
     large?: string;
     common?: string;
@@ -58,27 +59,41 @@ async function fetchWithRetry(
   }
 }
 
-// 处理单个游戏的函数
-async function processGame(
-  game: BangumiGame,
+// 获取条目类型名称
+function getTypeName(type: number): string {
+  const typeMap: { [key: number]: string } = {
+    1: "书籍",
+    2: "动画",
+    3: "音乐",
+    4: "游戏",
+    6: "三次元",
+  };
+  return typeMap[type] || "未知";
+}
+
+// 处理单个条目的函数
+async function processSubject(
+  subject: BangumiSubject,
   signal: AbortSignal,
   controller: ReadableStreamDefaultController<Uint8Array>,
   successCountRef: { value: number }
 ) {
   try {
     // HTML entities workaround
-    game.name = game.name.replaceAll("&amp;", "&");
+    subject.name = subject.name.replaceAll("&amp;", "&");
 
-    console.log(`处理游戏: ${game.id} (${game.name})`);
+    console.log(`处理条目: ${subject.id} (${subject.name}, 类型: ${getTypeName(subject.type)})`);
 
-    // 先发送游戏的基本信息，不含图片
+    // 先发送条目的基本信息，不含图片
     controller.enqueue(
       new TextEncoder().encode(
         JSON.stringify({
-          type: "gameStart",
-          game: {
-            id: game.id,
-            name: game.name,
+          type: "subjectStart",
+          subject: {
+            id: subject.id,
+            name: subject.name,
+            type: subject.type,
+            typeName: getTypeName(subject.type),
             image: null,
           },
         }) + "\n"
@@ -87,19 +102,19 @@ async function processGame(
 
     let image = null;
 
-    // 尝试获取游戏封面
-    if (game.images && game.images.large) {
-      image = game.images.large;
-    } else if (game.images && game.images.common) {
-      image = game.images.common;
-    } else if (game.image) {
-      image = game.image;
+    // 尝试获取条目封面
+    if (subject.images && subject.images.large) {
+      image = subject.images.large;
+    } else if (subject.images && subject.images.common) {
+      image = subject.images.common;
+    } else if (subject.image) {
+      image = subject.image;
     }
 
     // 如果没有直接可用的图片，尝试获取详细信息
     if (!image) {
       try {
-        const detailUrl = `${BANGUMI_API_BASE_URL}/v0/subjects/${game.id}`;
+        const detailUrl = `${BANGUMI_API_BASE_URL}/v0/subjects/${subject.id}`;
         const detailResponse = await fetchWithRetry(
           detailUrl,
           {
@@ -129,18 +144,20 @@ async function processGame(
         if ((detailError as any).name === "AbortError") {
           throw detailError; // 重新抛出以终止整个流程
         }
-        console.log(`获取游戏详情失败:`, detailError);
+        console.log(`获取条目详情失败:`, detailError);
       }
     }
 
-    // 发送游戏完整信息，含图片URL
+    // 发送条目完整信息，含图片URL
     controller.enqueue(
       new TextEncoder().encode(
         JSON.stringify({
-          type: "gameComplete",
-          game: {
-            id: game.id,
-            name: game.name,
+          type: "subjectComplete",
+          subject: {
+            id: subject.id,
+            name: subject.name,
+            type: subject.type,
+            typeName: getTypeName(subject.type),
             image,
           },
         }) + "\n"
@@ -152,16 +169,16 @@ async function processGame(
     // 检查是否是取消请求导致的错误
     if ((error as any).name === "AbortError") {
       // 对于取消的请求，只记录，不向客户端发送错误
-      console.log(`游戏 ${game.id} 请求被取消`);
+      console.log(`条目 ${subject.id} 请求被取消`);
       return;
     }
 
-    console.error(`处理游戏 ${game.id} 失败:`, error);
+    console.error(`处理条目 ${subject.id} 失败:`, error);
     controller.enqueue(
       new TextEncoder().encode(
         JSON.stringify({
-          type: "gameError",
-          gameId: game.id,
+          type: "subjectError",
+          subjectId: subject.id,
           error: (error as Error).message,
         }) + "\n"
       )
@@ -191,15 +208,16 @@ export async function GET(request: Request) {
       );
 
       try {
-        console.log(`开始在Bangumi搜索游戏: "${query}"`);
+        console.log(`开始在Bangumi搜索全部类型条目: "${query}"`);
 
         // 创建一个新的 AbortController 仅用于这次搜索请求
         const searchAbortController = new AbortController();
 
-        // 搜索游戏 - 使用Bangumi API
+        // 搜索全部类型条目 - 使用Bangumi API
+        // 不指定type参数，搜索所有类型
         const searchUrl = `${BANGUMI_API_BASE_URL}/search/subject/${encodeURIComponent(
           query
-        )}?type=4&responseGroup=small`;
+        )}?responseGroup=small`;
         console.log(`发送搜索请求到: ${searchUrl}`);
 
         try {
@@ -229,7 +247,7 @@ export async function GET(request: Request) {
               new TextEncoder().encode(
                 JSON.stringify({
                   type: "end",
-                  message: "没有找到任何游戏",
+                  message: "没有找到任何条目",
                 }) + "\n"
               )
             );
@@ -237,34 +255,34 @@ export async function GET(request: Request) {
             return;
           }
 
-          // 发送初始消息，告知前端总游戏数量
+          // 发送初始消息，告知前端总条目数量
           controller.enqueue(
             new TextEncoder().encode(
               JSON.stringify({
                 type: "init",
-                total: Math.min(searchData.list.length, 10),
+                total: Math.min(searchData.list.length, 15), // 增加到15个结果
               }) + "\n"
             )
           );
 
-          // 处理前10个搜索结果
-          const results = searchData.list.slice(0, 10);
+          // 处理前15个搜索结果
+          const results = searchData.list.slice(0, 15);
           const successCountRef = { value: 0 };
 
           // 为详情请求创建单独的 AbortController
           const detailAbortController = new AbortController();
 
-          // 同时请求多个游戏的详情，但限制并发数
-          const batchSize = 2; // 每批处理的游戏数
+          // 同时请求多个条目的详情，但限制并发数
+          const batchSize = 2; // 每批处理的条目数
 
           for (let i = 0; i < results.length; i += batchSize) {
             const batch = results.slice(i, i + batchSize);
 
-            // 并行处理每个批次中的游戏
+            // 并行处理每个批次中的条目
             await Promise.all(
-              batch.map((game: BangumiGame) =>
-                processGame(
-                  game,
+              batch.map((subject: BangumiSubject) =>
+                processSubject(
+                  subject,
                   detailAbortController.signal,
                   controller,
                   successCountRef
@@ -285,8 +303,8 @@ export async function GET(request: Request) {
                 type: "end",
                 message:
                   successCountRef.value > 0
-                    ? "所有游戏数据已发送完成"
-                    : "未能获取游戏封面，请重试",
+                    ? "所有条目数据已发送完成"
+                    : "未能获取条目封面，请重试",
                 successCount: successCountRef.value,
               }) + "\n"
             )
@@ -299,7 +317,7 @@ export async function GET(request: Request) {
             return;
           }
 
-          console.error("搜索游戏失败:", searchError);
+          console.error("搜索条目失败:", searchError);
           controller.enqueue(
             new TextEncoder().encode(
               JSON.stringify({
@@ -335,4 +353,3 @@ export async function GET(request: Request) {
     },
   });
 }
-
