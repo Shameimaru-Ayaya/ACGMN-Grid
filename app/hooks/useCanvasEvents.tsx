@@ -202,7 +202,7 @@ export function useCanvasEvents({
       let fileSize = 0;
 
       // 获取主标题（从localStorage）
-      let baseFileName = "游戏生涯个人喜好表";
+      let baseFileName = "ACGMN+生涯个人喜好表";
       try {
         const savedConfig = localStorage.getItem('gameGridGlobalConfig');
         if (savedConfig) {
