@@ -162,71 +162,107 @@ export function useCanvasRenderer({
           const prevBaseline2 = ctx.textBaseline
           ctx.textBaseline = "alphabetic"
           ctx.fillStyle = "#4b5563" // 灰色文字
-          ctx.font = `${CANVAS_CONFIG.cellNameFontSize}px sans-serif`
           
           const maxWidth = cellWidth - CANVAS_CONFIG.cellPadding * 4
           const gameName = cell.name
           const textWidth = ctx.measureText(gameName).width
           
-          // 计算第一行文字的Y坐标
-          const firstLineY = coverY +
-            coverHeight +
-            CANVAS_CONFIG.cellTitleMargin +
-            baseCellTitleFont +
-            CANVAS_CONFIG.cellNameMargin +
-            CANVAS_CONFIG.cellNameFontSize
+          // 检测前20个字符中是否包含空格(用于判断是否为英文/拉丁文本)
+          const checkPrefix = gameName.substring(0, 20)
+          const hasSpaces = checkPrefix.includes(' ')
+          
+          // 根据是否两行显示来调整字号
+          let nameFontSize = CANVAS_CONFIG.cellNameFontSize
+          let lineHeight = nameFontSize + 4
           
           if (textWidth <= maxWidth) {
             // 单行显示
+            ctx.font = `${nameFontSize}px sans-serif`
+            const firstLineY = coverY +
+              coverHeight +
+              CANVAS_CONFIG.cellTitleMargin +
+              baseCellTitleFont +
+              CANVAS_CONFIG.cellNameMargin +
+              nameFontSize
             ctx.fillText(gameName, x + cellWidth / 2, firstLineY)
           } else {
-            // 尝试分成两行
-            const words = gameName.split(' ')
+            // 需要两行显示,缩小字号以适应空间
+            nameFontSize = Math.floor(CANVAS_CONFIG.cellNameFontSize * 0.85)
+            lineHeight = nameFontSize + 3
+            ctx.font = `${nameFontSize}px sans-serif`
+            
             let line1 = ''
             let line2 = ''
-            let line1Width = 0
             
-            // 逐词添加到第一行,直到超出宽度
-            for (let i = 0; i < words.length; i++) {
-              const testLine = line1 + (line1 ? ' ' : '') + words[i]
-              const testWidth = ctx.measureText(testLine).width
+            if (hasSpaces) {
+              // 英文/拉丁文本:按空格分词
+              const words = gameName.split(' ')
               
-              if (testWidth <= maxWidth) {
-                line1 = testLine
-                line1Width = testWidth
-              } else {
-                // 第一行已满,剩余的放到第二行
-                line2 = words.slice(i).join(' ')
-                break
+              for (let i = 0; i < words.length; i++) {
+                const testLine = line1 + (line1 ? ' ' : '') + words[i]
+                const testWidth = ctx.measureText(testLine).width
+                
+                if (testWidth <= maxWidth) {
+                  line1 = testLine
+                } else {
+                  line2 = words.slice(i).join(' ')
+                  break
+                }
+              }
+              
+              // 如果第二行为空(单词太长),按字符截断
+              if (!line2) {
+                for (let i = 0; i < gameName.length; i++) {
+                  const testLine = gameName.substring(0, i + 1)
+                  if (ctx.measureText(testLine).width > maxWidth) {
+                    line1 = gameName.substring(0, i)
+                    line2 = gameName.substring(i)
+                    break
+                  }
+                }
+              }
+            } else {
+              // CJK文本:按字符填充
+              for (let i = 0; i < gameName.length; i++) {
+                const testLine = gameName.substring(0, i + 1)
+                const testWidth = ctx.measureText(testLine).width
+                
+                if (testWidth > maxWidth) {
+                  line1 = gameName.substring(0, i)
+                  line2 = gameName.substring(i)
+                  break
+                }
+              }
+              
+              // 如果循环结束都没超出,说明全部可以放在第一行
+              if (!line2) {
+                line1 = gameName
               }
             }
             
-            // 如果第二行为空(说明单词太长),则强制在第一行截断
-            if (!line2) {
-              let truncated = gameName
-              while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
-                truncated = truncated.slice(0, -1)
+            // 检查第二行是否溢出,如需截断
+            if (line2) {
+              let testLine2 = line2
+              while (ctx.measureText(testLine2).width > maxWidth && testLine2.length > 0) {
+                testLine2 = testLine2.slice(0, -1)
               }
-              ctx.fillText(truncated + '...', x + cellWidth / 2, firstLineY)
-            } else {
-              // 检查第二行是否溢出
-              const line2Width = ctx.measureText(line2).width
-              if (line2Width > maxWidth) {
-                // 第二行溢出,截断第二行
-                let truncated = line2
-                while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
-                  truncated = truncated.slice(0, -1)
-                }
-                line2 = truncated + '...'
+              if (testLine2.length < line2.length) {
+                line2 = testLine2 + '...'
               }
-              
-              // 绘制两行文字
-              ctx.fillText(line1, x + cellWidth / 2, firstLineY)
-              ctx.fillText(
-                line2,
-                x + cellWidth / 2,
-                firstLineY + CANVAS_CONFIG.cellNameFontSize + 4
-              )
+            }
+            
+            // 计算两行文字的Y坐标(使用缩小后的字号和行高)
+            const firstLineY = coverY +
+              coverHeight +
+              CANVAS_CONFIG.cellTitleMargin +
+              baseCellTitleFont +
+              CANVAS_CONFIG.cellNameMargin +
+              nameFontSize
+            
+            // 绘制文字
+            ctx.fillText(line1, x + cellWidth / 2, firstLineY)
+            if (line2) {
+              ctx.fillText(line2, x + cellWidth / 2, firstLineY + lineHeight)
             }
           }
           
