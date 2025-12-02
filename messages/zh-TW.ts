@@ -51,7 +51,7 @@ const zhTW = {
     close: '關閉',
   },
   footer: {
-    made_with: 'Derivative Adaptation with Claude',
+    made_with: '二次創作 by Claude',
     if_useful_star: '如果覺得對你有用請點 →',
     powered_by: 'Powered by Bangumi & SteamGridDB',
     official_link: '唯一指定連結：acgmn-grid.vercel.app',
