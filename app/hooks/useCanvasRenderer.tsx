@@ -166,6 +166,9 @@ export function useCanvasRenderer({
           const maxWidth = cellWidth - CANVAS_CONFIG.cellPadding * 4
           let gameName = cell.name
           
+          // 先将文本中的 \\n (两个字符) 替换为真正的换行符 \n
+          gameName = gameName.replace(/\\n/g, '\n')
+          
           // 检查是否包含\n符，如果有则在第一个\n处强制换行
           const newlineIndex = gameName.indexOf('\n')
           let hasManualNewline = false
@@ -327,7 +330,8 @@ export function useCanvasRenderer({
             if (line2) {
               ctx.fillText(line2, x + cellWidth / 2, firstLineY + lineHeight)
             }
-          }          
+          }
+          
           ctx.textBaseline = prevBaseline2
         }
       })
