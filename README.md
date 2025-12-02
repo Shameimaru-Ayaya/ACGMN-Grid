@@ -1,6 +1,6 @@
 # ACGMN+Grid - ACGMN+生涯个人喜好表
 
-![示例图](screenshot/me.png)
+![示例图](screenshot/example.png)
 
 生成你自己的ACGMN+生涯个人喜好表！
 
