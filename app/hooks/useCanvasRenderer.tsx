@@ -188,7 +188,7 @@ export function useCanvasRenderer({
           } else {
             // 需要两行显示,缩小字号以适应空间
             nameFontSize = Math.floor(CANVAS_CONFIG.cellNameFontSize * 0.85)
-            lineHeight = nameFontSize + 3
+            lineHeight = nameFontSize + 1
             ctx.font = `${nameFontSize}px sans-serif`
             
             let line1 = ''
@@ -275,7 +275,7 @@ export function useCanvasRenderer({
       ctx.font = "28px sans-serif" 
       ctx.textAlign = "right"
       ctx.fillText(
-        "gamegrid.shatranj.space",
+        "acgmn-grid.vercel.app",
         canvas.width - CANVAS_CONFIG.padding,
         canvas.height - CANVAS_CONFIG.padding / 2
       )
