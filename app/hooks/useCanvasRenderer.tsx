@@ -186,10 +186,25 @@ export function useCanvasRenderer({
               nameFontSize
             ctx.fillText(gameName, x + cellWidth / 2, firstLineY)
           } else {
-            // 需要两行显示,缩小字号以适应空间
+            // 需要两行显示,先缩小字号
             nameFontSize = Math.floor(CANVAS_CONFIG.cellNameFontSize * 0.85)
             lineHeight = nameFontSize + 1 // 压缩行间距
             ctx.font = `${nameFontSize}px sans-serif`
+            
+            // 缩小字号后重新测量，可能可以放在一行了
+            const newTextWidth = ctx.measureText(gameName).width
+            if (newTextWidth <= maxWidth) {
+              // 缩小后能放在一行
+              const firstLineY = coverY +
+                coverHeight +
+                CANVAS_CONFIG.cellTitleMargin +
+                baseCellTitleFont +
+                CANVAS_CONFIG.cellNameMargin +
+                nameFontSize
+              ctx.fillText(gameName, x + cellWidth / 2, firstLineY)
+            } else {
+              // 缩小后仍需两行
+              // 缩小后仍需两行
             
             let line1 = ''
             let line2 = ''
@@ -262,6 +277,8 @@ export function useCanvasRenderer({
             ctx.fillText(line1, x + cellWidth / 2, firstLineY)
             if (line2) {
               ctx.fillText(line2, x + cellWidth / 2, firstLineY + lineHeight)
+            }
+              }
             }
           }
           
