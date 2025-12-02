@@ -37,7 +37,7 @@ const zhCN = {
   ],
   ui: {
     tip_edit:
-      '提示：点击顶部标题、格子标题或游戏名称可以编辑；也可直接拖拽图片到格子中。<<<Derivative Adaptation: Github@Shameimaru-Ayaya>>>',
+      '提示：点击顶部标题、格子标题或游戏名称可以编辑；也可直接拖拽图片到格子中。<Original Work: Github@SomiaWhiteRing>',
     generate: '生成{title}！',
   },
   dialog: {
@@ -51,10 +51,10 @@ const zhCN = {
     close: '关闭',
   },
   footer: {
-    made_with: 'made with Copilot & Codex',
+    made_with: 'Derivative Adaptation with Claude & DeepSeek',
     if_useful_star: '如果觉得对你有用请点 →',
-    powered_by: 'Powered by SteamGridDB & Bangumi',
-    official_link: '唯一指定链接：gamegrid.shatranj.space',
+    powered_by: 'Powered by Bangumi & SteamGridDB',
+    official_link: '唯一指定链接：acgmn-grid.vercel.app',
   },
   seo: {
     intro:
