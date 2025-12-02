@@ -182,7 +182,8 @@ export function useCanvasRenderer({
               coverHeight +
               CANVAS_CONFIG.cellTitleMargin +
               baseCellTitleFont +
-              nameFontSize // 去掉 cellNameMargin
+              CANVAS_CONFIG.cellNameMargin + // 保留单行间距
+              nameFontSize
             ctx.fillText(gameName, x + cellWidth / 2, firstLineY)
           } else {
             // 需要两行显示,缩小字号以适应空间
