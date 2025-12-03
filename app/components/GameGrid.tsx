@@ -360,6 +360,35 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
     }
   };
 
+  //处理tip中超链接
+  const parseTextWithLinks = (text: string) => {
+    const parts = text.split(/(\[.*?\]\(.*?\))/g);
+    
+    return parts.map((part, index) => {
+      const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
+      if (linkMatch) {
+        return (
+          <a 
+            key={index}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline"
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      }
+      
+      return part.split('\n').map((line, i, arr) => (
+        <span key={`${index}-${i}`}>
+          {line}
+          {i < arr.length - 1 && <br />}
+        </span>
+      ));
+    });
+  };
+
   return (
     <>
       <canvas
@@ -376,8 +405,8 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
         }}
       />
       
-      <p className="mt-4 px-4 text-sm text-gray-500 break-words whitespace-pre-line max-w-3xl mx-auto">
-        {t('ui.tip_edit')}
+      <p className="mt-4 px-4 text-sm text-gray-500 break-words max-w-3xl mx-auto">
+        {parseTextWithLinks(t('ui.tip_edit'))}
       </p>
 
       <Button 
