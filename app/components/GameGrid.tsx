@@ -375,8 +375,8 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
           maxWidth: "100%",
         }}
       />
-
-      <p className="mt-4 px-4 text-sm text-gray-500 break-words max-w-2xl mx-auto">
+      
+      <p className="mt-4 px-4 text-sm text-gray-500 break-words whitespace-pre-line max-w-3xl mx-auto">
         {t('ui.tip_edit')}
       </p>
 
