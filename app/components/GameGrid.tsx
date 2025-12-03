@@ -376,7 +376,7 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
         }}
       />
 
-      <p className="mt-4 px-4 text-sm text-gray-500 break-words">
+      <p className="mt-4 px-4 text-sm text-gray-500 break-words max-w-2xl mx-auto">
         {t('ui.tip_edit')}
       </p>
 
