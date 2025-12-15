@@ -452,9 +452,9 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
         <div className="mb-4">
           <div className="flex items-center mb-2">
             <span className="text-sm text-gray-500 mr-2">{t('search.source')}</span>
-            <Tabs defaultValue="steamgriddb" value={searchSource} onValueChange={handleSearchSourceChange} className="flex-1">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="bangumi" className="flex items-center justify-center gap-1">
+            <Tabs defaultValue="steamgriddb" value={searchSource} onValueChange={handleSearchSourceChange} className="flex-1 min-w-0">
+              <TabsList className="flex w-full gap-2 overflow-x-auto md:grid md:grid-cols-3 md:overflow-visible">
+                <TabsTrigger value="bangumi" className="flex items-center justify-center gap-1 flex-shrink-0 whitespace-nowrap text-xs md:text-sm px-2 md:px-3">
                   Bangumi
                   <TooltipProvider>
                     <Tooltip>
@@ -472,7 +472,7 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
                     </Tooltip>
                   </TooltipProvider>
                 </TabsTrigger>
-                <TabsTrigger value="steamgriddb" className="flex items-center justify-center gap-1">
+                <TabsTrigger value="steamgriddb" className="flex items-center justify-center gap-1 flex-shrink-0 whitespace-nowrap text-xs md:text-sm px-2 md:px-3">
                   SteamGridDB
                   <TooltipProvider>
                     <Tooltip>
@@ -490,7 +490,7 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
                     </Tooltip>
                   </TooltipProvider>
                 </TabsTrigger>
-                <TabsTrigger value="link" className="flex items-center justify-center gap-1">
+                <TabsTrigger value="link" className="flex items-center justify-center gap-1 flex-shrink-0 whitespace-nowrap text-xs md:text-sm px-2 md:px-3">
                   从链接下载
                   <TooltipProvider>
                     <Tooltip>

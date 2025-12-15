@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Bangumi API 基础URL
 const BANGUMI_API_BASE_URL = "https://api.bgm.tv";
 // Bangumi API Access Token
@@ -102,14 +106,15 @@ async function processSubject(
     if (!image) {
       try {
         const detailUrl = `${BANGUMI_API_BASE_URL}/v0/subjects/${subject.id}`;
+        const headers = {
+          "User-Agent": BANGUMI_USER_AGENT || "GameGrid/1.0",
+          Accept: "application/json",
+          ...(BANGUMI_ACCESS_TOKEN ? { Authorization: `Bearer ${BANGUMI_ACCESS_TOKEN}` } : {}),
+        }
         const detailResponse = await fetchWithRetry(
           detailUrl,
           {
-            headers: {
-              "User-Agent": BANGUMI_USER_AGENT || "GameGrid/1.0",
-              Accept: "application/json",
-              Authorization: `Bearer ${BANGUMI_ACCESS_TOKEN}`,
-            },
+            headers,
             signal,
           },
           1,
@@ -124,6 +129,40 @@ async function processSubject(
             image = detailData.images.common;
           } else if (detailData.image) {
             image = detailData.image;
+          }
+        }
+
+        // Fallback to legacy endpoint if v0 has no image or fails
+        if (!image) {
+          try {
+            const legacyUrl = `${BANGUMI_API_BASE_URL}/subject/${subject.id}`;
+            const legacyResponse = await fetchWithRetry(
+              legacyUrl,
+              {
+                headers: {
+                  "User-Agent": BANGUMI_USER_AGENT || "GameGrid/1.0",
+                  Accept: "application/json",
+                },
+                signal,
+              },
+              1,
+              5000
+            )
+            if (legacyResponse.ok) {
+              const legacyData = await legacyResponse.json();
+              if (legacyData.images && legacyData.images.large) {
+                image = legacyData.images.large;
+              } else if (legacyData.images && legacyData.images.common) {
+                image = legacyData.images.common;
+              } else if (legacyData.image) {
+                image = legacyData.image;
+              }
+            }
+          } catch (legacyError) {
+            if ((legacyError as any).name === "AbortError") {
+              throw legacyError;
+            }
+            console.log(`获取旧版条目详情失败:`, legacyError)
           }
         }
       } catch (detailError) {
@@ -210,7 +249,7 @@ export async function GET(request: Request) {
             headers: {
               "User-Agent": BANGUMI_USER_AGENT || "GameGrid/1.0",
               Accept: "application/json",
-              Authorization: `Bearer ${BANGUMI_ACCESS_TOKEN}`,
+              ...(BANGUMI_ACCESS_TOKEN ? { Authorization: `Bearer ${BANGUMI_ACCESS_TOKEN}` } : {}),
             },
             signal: searchAbortController.signal,
           });
@@ -332,8 +371,7 @@ export async function GET(request: Request) {
   return new Response(stream, {
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control":
-        "public, max-age=3600, s-maxage=3600, stale-while-revalidate=7200",
+      "Cache-Control": "no-store, max-age=0",
       "X-Content-Type-Options": "nosniff",
     },
   });
