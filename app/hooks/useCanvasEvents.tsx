@@ -263,10 +263,7 @@ export function useCanvasEvents({
       }
 
       // 创建下载链接
--      const link = document.createElement("a")
--      link.download = fileName
--      link.href = dataUrl
--      link.click()
+
 +      // 使用 Blob 对象URL提高Safari等浏览器的兼容性
 +      const blob = await (async () => {
 +        const res = await fetch(dataUrl);
