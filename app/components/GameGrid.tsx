@@ -204,13 +204,12 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
   const handleSelectGame = async (game: GameSearchResult) => {
     if (selectedCellId === null) return;
 
-    // 当搜索结果没有图时，仅导入并绘制标题
+    // 当搜索结果没有图时，仅导入到下方「游戏名称」
     const hasImage = typeof game.image === 'string' && game.image.trim().length > 0;
     if (!hasImage) {
       const updatedCell: GameCell = {
         ...cells[selectedCellId],
-        title: game.name, // 仅设置标题
-        name: "",        // 不设置下方游戏名
+        name: game.name, // 导入到「游戏名称」区域
         image: undefined,
         imageObj: null,
       };
@@ -414,7 +413,7 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
         ref={canvasRef}
         onClick={handleCanvasClick}
         onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+        onDragLeave={handleDragOver}
         onDrop={handleDrop}
         className="cursor-pointer"
         style={{
