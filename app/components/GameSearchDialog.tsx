@@ -75,24 +75,25 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
   }, [isOpen, searchResults.length]);
 
   // 清空搜索结果和状态
-  const handleClearSearch = () => {
-    // 取消正在进行的搜索请求
-    if (abortControllerRef.current) {
-      console.log('清除搜索时取消进行中的搜索请求');
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    
-    // 重置加载状态
-    setIsLoading(false);
-    
-    // 清空搜索内容和结果
-    setSearchTerm('');
-    setSearchResults([]);
-    setTotalResults(0);
-    setSearchStatus({ state: 'idle', message: searchSource === 'link' ? '输入链接地址开始下载' : String(t('search.idle_hint')) });
-    lastSearchTermRef.current = '';
-  };
+  const handleClearSearch = (nextSource?: SearchSource) => {
+     // 取消正在进行的搜索请求
+     if (abortControllerRef.current) {
+       console.log('清除搜索时取消进行中的搜索请求');
+       abortControllerRef.current.abort();
+       abortControllerRef.current = null;
+     }
+     
+     // 重置加载状态
+     setIsLoading(false);
+     
+     // 清空搜索内容和结果
+     setSearchTerm('');
+     setSearchResults([]);
+     setTotalResults(0);
++    const src = nextSource ?? searchSource;
++    setSearchStatus({ state: 'idle', message: src === 'link' ? '输入链接地址开始下载' : String(t('search.idle_hint')) });
+     lastSearchTermRef.current = '';
+   };
 
   // 处理搜索源切换
   const handleSearchSourceChange = (value: string) => {
