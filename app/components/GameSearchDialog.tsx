@@ -561,9 +561,9 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
                   <div className="relative w-full h-0 pb-[133.33%] rounded overflow-hidden bg-gray-100">
                     {game.image ? (
                       <NextImage 
-                        src={game.image} 
-                        alt={game.name} 
-                        fill 
+                        src={(game.image.startsWith('/api/') || game.image.startsWith('data:')) ? game.image : `/api/proxy?url=${encodeURIComponent(game.image)}`}
+                        alt={game.name}
+                        fill
                         className="object-cover"
                         sizes="(max-width: 768px) 40vw, 20vw"
                         loading="lazy"
