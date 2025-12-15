@@ -203,7 +203,24 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
   // 选择游戏
   const handleSelectGame = async (game: GameSearchResult) => {
     if (selectedCellId === null) return;
-    
+
+    // 当搜索结果没有图时，仅导入并绘制标题
+    const hasImage = typeof game.image === 'string' && game.image.trim().length > 0;
+    if (!hasImage) {
+      const updatedCell: GameCell = {
+        ...cells[selectedCellId],
+        title: game.name, // 仅设置标题
+        name: "",        // 不设置下方游戏名
+        image: undefined,
+        imageObj: null,
+      };
+
+      setCells(cells.map((cell) => (cell.id === selectedCellId ? updatedCell : cell)));
+      saveToIndexedDB(updatedCell);
+      setIsSearchDialogOpen(false);
+      return;
+    }
+
     // 使用代理URL替换直接的外部URL；若已是本地或数据URL则直接使用
     const proxyImageUrl = (game.image.startsWith('/api/') || game.image.startsWith('data:'))
       ? game.image

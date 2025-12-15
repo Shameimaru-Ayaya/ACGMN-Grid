@@ -574,7 +574,19 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
                       </div>
                     )}
                   </div>
-                  <p className="text-xs sm:text-sm truncate mt-1 sm:mt-2">{game.name}</p>
+                  <p
+                    className={`mt-1 sm:mt-2 leading-tight text-[11px]`}
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      wordBreak: 'break-word',
+                      whiteSpace: 'normal',
+                    }}
+                  >
+                    {game.name}
+                  </p>
                 </div>
               ))}
             </div>
