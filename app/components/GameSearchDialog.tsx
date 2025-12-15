@@ -26,7 +26,7 @@ interface GameSearchDialogProps {
 /**
  * 搜索源类型
  */
-type SearchSource = 'steamgriddb' | 'bangumi';
+type SearchSource = 'steamgriddb' | 'bangumi' | 'link';
 
 /**
  * 搜索状态类型
@@ -90,7 +90,7 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
     setSearchTerm('');
     setSearchResults([]);
     setTotalResults(0);
-    setSearchStatus({ state: 'idle', message: "输入游戏名称开始搜索" });
+    setSearchStatus({ state: 'idle', message: searchSource === 'link' ? '输入链接地址开始下载' : String(t('search.idle_hint')) });
     lastSearchTermRef.current = '';
   };
 
@@ -313,7 +313,11 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
   // 处理回车键搜索
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !isLoading) {
-      searchGames();
+      if (searchSource === 'link') {
+        downloadImageFromUrl();
+      } else {
+        searchGames();
+      }
     } else if (e.key === 'Escape') {
       onOpenChange(false);
     }
@@ -387,6 +391,57 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
     }
   };
 
+  // 从链接下载图片
+  const downloadImageFromUrl = async () => {
+    const url = searchTerm.trim();
+    if (!url) {
+      setSearchStatus({ state: 'idle', message: '请输入链接地址' });
+      return;
+    }
+
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        setSearchStatus({ state: 'error', message: '仅支持 http/https 链接' });
+        return;
+      }
+    } catch {
+      setSearchStatus({ state: 'error', message: '链接无效，请检查后重试' });
+      return;
+    }
+
+    setIsLoading(true);
+    setSearchResults([]);
+    setTotalResults(0);
+    setSearchStatus({ state: 'searching', message: '正在下载...' });
+
+    const proxiedSrc = `/api/proxy?url=${encodeURIComponent(url)}`;
+
+    try {
+      const resp = await fetch(proxiedSrc);
+      if (!resp.ok) throw new Error('下载失败');
+
+      const contentType = resp.headers.get('Content-Type') || '';
+      if (!contentType.startsWith('image/')) {
+        setSearchStatus({ state: 'error', message: '链接内容不是图片' });
+        return;
+      }
+
+      const parsed = new URL(url);
+      const name = decodeURIComponent(parsed.pathname.split('/').pop() || '链接图片');
+      const result: GameSearchResult = { id: url, name, image: proxiedSrc };
+
+      setSearchResults([result]);
+      setTotalResults(1);
+      setSearchStatus({ state: 'success', message: '' });
+    } catch (e) {
+      console.error('从链接下载失败:', e);
+      setSearchStatus({ state: 'error', message: '下载失败，请检查链接或网络' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto sm:max-w-md md:max-w-lg lg:max-w-xl">
@@ -398,7 +453,7 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
           <div className="flex items-center mb-2">
             <span className="text-sm text-gray-500 mr-2">{t('search.source')}</span>
             <Tabs defaultValue="steamgriddb" value={searchSource} onValueChange={handleSearchSourceChange} className="flex-1">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="bangumi" className="flex items-center justify-center gap-1">
                   Bangumi
                   <TooltipProvider>
@@ -435,6 +490,24 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
                     </Tooltip>
                   </TooltipProvider>
                 </TabsTrigger>
+                <TabsTrigger value="link" className="flex items-center justify-center gap-1">
+                  从链接下载
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span 
+                          className="inline-flex items-center justify-center cursor-help"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Info className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent sideOffset={5} align="center">
+                        <p>输入图片网页链接，下载后与搜索结果一致展示</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -444,7 +517,7 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={String(t('search.placeholder'))}
+                placeholder={searchSource === 'link' ? '输入图片链接地址' : String(t('search.placeholder'))}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
                 className="pr-8"
@@ -459,16 +532,16 @@ export function GameSearchDialog({ isOpen, onOpenChange, onSelectGame, onUploadI
                 </button>
               )}
             </div>
-            <Button onClick={() => searchGames()} disabled={isLoading || !searchTerm.trim()}>
+            <Button onClick={() => searchSource === 'link' ? downloadImageFromUrl() : searchGames()} disabled={isLoading || !searchTerm.trim()}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('search.searching')}
+                  {searchSource === 'link' ? '正在下载…' : t('search.searching')}
                 </>
               ) : (
                 <>
                   <Search className="mr-2 h-4 w-4" />
-                  {t('search.search')}
+                  {searchSource === 'link' ? '下载' : t('search.search')}
                 </>
               )}
             </Button>

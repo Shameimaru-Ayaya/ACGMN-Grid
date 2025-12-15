@@ -204,8 +204,10 @@ export function GameGrid({ initialCells, onUpdateCells }: GameGridProps) {
   const handleSelectGame = async (game: GameSearchResult) => {
     if (selectedCellId === null) return;
     
-    // 使用代理URL替换直接的外部URL
-    const proxyImageUrl = `/api/proxy?url=${encodeURIComponent(game.image)}`;
+    // 使用代理URL替换直接的外部URL；若已是本地或数据URL则直接使用
+    const proxyImageUrl = (game.image.startsWith('/api/') || game.image.startsWith('data:'))
+      ? game.image
+      : `/api/proxy?url=${encodeURIComponent(game.image)}`;
 
     try {
       // 先更新UI显示，让用户知道正在处理
