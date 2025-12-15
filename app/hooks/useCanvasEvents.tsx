@@ -262,32 +262,42 @@ export function useCanvasEvents({
         }
       }
 
-      // 创建下载链接
-      // 使用 Blob 对象URL提高Safari等浏览器的兼容性
-      const blob = await (async () => {
-        const res = await fetch(dataUrl);
-        return await res.blob();
-      })();
+      // 创建下载链接 - 优化Safari兼容性
+      // 将base64转换为Blob对象
+      const byteString = atob(dataUrl.split(',')[1]);
+      const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
       const objectUrl = URL.createObjectURL(blob);
 
+      // 创建隐藏的下载链接
       const link = document.createElement("a");
-      link.download = fileName;
+      link.style.display = "none";
       link.href = objectUrl;
-      link.rel = "noopener";
-      // 某些浏览器(例如Safari)要求元素在DOM中才能触发点击
+      link.download = fileName;
+      
+      // 添加到DOM,触发点击,然后清理
       document.body.appendChild(link);
-      link.click();
-      // 清理DOM与URL对象
+      
+      // 使用setTimeout确保DOM更新完成
       setTimeout(() => {
-        try {
+        link.click();
+        
+        // 延迟清理,确保下载开始
+        setTimeout(() => {
           document.body.removeChild(link);
-        } catch {}
-        URL.revokeObjectURL(objectUrl);
+          URL.revokeObjectURL(objectUrl);
+        }, 100);
       }, 0);
 
       console.log(`图片已生成并下载: ${fileName}, 大小: ${(fileSize / 1024 / 1024).toFixed(2)}MB`);
     } catch (error) {
       console.error("生成图片失败:", error)
+      alert("生成图片失败,请重试");
     }
   }
 
